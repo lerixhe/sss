@@ -1,20 +1,20 @@
 package main
 
 import (
-	"sss/GetArea/handler"
-	"sss/GetArea/subscriber"
+	"sss/GetImageCd/handler"
+	"sss/GetImageCd/subscriber"
 
 	"github.com/micro/go-micro"
 	"github.com/micro/go-micro/service/grpc"
 	"github.com/micro/go-micro/util/log"
 
-	GETAREA "sss/GetArea/proto/GetArea"
+	GETIMAGECD "sss/GetImageCd/proto/GetImageCd"
 )
 
 func main() {
 	// New Service
 	service := grpc.NewService(
-		micro.Name("go.micro.srv.GetArea"),
+		micro.Name("go.micro.srv.GetImageCd"),
 		micro.Version("latest"),
 	)
 
@@ -22,13 +22,13 @@ func main() {
 	service.Init()
 
 	// Register Handler
-	GETAREA.RegisterGetAreaHandler(service.Server(), new(handler.GetArea))
+	GETIMAGECD.RegisterGetImageCdHandler(service.Server(), new(handler.GetImageCd))
 
 	// Register Struct as Subscriber
-	micro.RegisterSubscriber("go.micro.srv.GetArea", service.Server(), new(subscriber.GetArea))
+	micro.RegisterSubscriber("go.micro.srv.GetImageCd", service.Server(), new(subscriber.GetImageCd))
 
 	// Register Function as Subscriber
-	micro.RegisterSubscriber("go.micro.srv.GetArea", service.Server(), subscriber.Handler)
+	micro.RegisterSubscriber("go.micro.srv.GetImageCd", service.Server(), subscriber.Handler)
 
 	// Run service
 	if err := service.Run(); err != nil {
