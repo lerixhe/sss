@@ -31,7 +31,10 @@ func main() {
 	rou.NotFound = http.FileServer(http.Dir("html"))
 	// 获取地区请求
 	rou.GET("/api/v1.0/areas", handler.GetArea)
-
+	// 获取session请求
+	rou.GET("/api/v1.0/session", handler.GetSession)
+	// 获取首页轮播请求
+	rou.GET("/api/v1.0/house/index", handler.GetIndex)
 	// 注册服务
 	service.Handle("/", rou)
 

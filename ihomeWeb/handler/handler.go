@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"sss/ihomeWeb/utils"
 
 	GETAREA "sss/GetArea/proto/GetArea"
 	"sss/ihomeWeb/models"
@@ -21,7 +22,7 @@ import (
 // 	}
 // }
 
-// 调用远程方法的函数
+// 调用远程方法的函数:获取地址
 func GetArea(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	service := grpc.NewService()
 	service.Init()
@@ -43,6 +44,54 @@ func GetArea(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		"errno":  res.Error,
 		"errmsg": res.Errmsg,
 		"data":   areaList,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	return
+}
+
+// 调用远程方法的函数：获取session
+func GetSession(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	// service := grpc.NewService()
+	// service.Init()
+	// areaService := GETAREA.NewGetAreaService("go.micro.srv.GetArea", service.Client())
+	// res, err := areaService.GetAreas(context.TODO(), &GETAREA.Request{})
+	// // 若发生错误
+	// if err != nil {
+	// 	http.Error(w, err.Error(), 500)
+	// 	return
+	// }
+
+	response := map[string]interface{}{
+		"errno":  utils.RECODE_SESSIONERR,
+		"errmsg": utils.RecodeText(utils.RECODE_SESSIONERR),
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+}
+
+// 调用远程方法的函数:获取首页轮播图
+func GetIndex(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	// service := grpc.NewService()
+	// service.Init()
+	// areaService := GETAREA.NewGetAreaService("go.micro.srv.GetArea", service.Client())
+	// res, err := areaService.GetAreas(context.TODO(), &GETAREA.Request{})
+	// // 若发生错误
+	// if err != nil {
+	// 	http.Error(w, err.Error(), 500)
+	// 	return
+	// }
+
+	response := map[string]interface{}{
+		"errno":  utils.RECODE_DBERR,
+		"errmsg": utils.RecodeText(utils.RECODE_DBERR),
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
