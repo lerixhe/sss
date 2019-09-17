@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package go.micro.srv.GetArea;
+
+service GetArea {
+
+	// 获取地区信息服务
+	rpc GetAreas(Request) returns (Response) {}
+}
+
+message Message {
+	string say = 1;
+}
+
+message Request {
+
+}
+
+message Response {
+	/* 
+	"errno": 0,
+"errmsg":"OK",
+"data": [
+{"aid": 1, "aname": "东城区"},
+{"aid": 2, "aname": "西城区"},
+{"aid": 3, "aname": "通州区"},
+{"aid": 4, "aname": "顺义区"}]
+	*/
+	// 错误码
+	string Error = 1;
+	// 错误信息
+	string Errmsg = 2;
+	message Areas {
+		// 地区iD
+		int32 Aid=1;
+		// 地区名称
+		string Aname=2;
+	}
+	// 地区信息数组
+	repeated Areas Data=3;
+}
