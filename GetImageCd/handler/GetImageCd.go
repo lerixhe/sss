@@ -61,7 +61,6 @@ func (e *GetImageCd) CallGetImageCd(ctx context.Context, req *GETIMAGECD.Request
 	beego.Info("图片验证码发送成功")
 	rsp.Error = utils.RECODE_OK
 	rsp.Errmsg = utils.RecodeText(rsp.Error)
-	beego.Info("这里没问题")
 	// 返回图片信息，注意图片是指针，接口传值不能传指针,需要解引用。
 	image := *CaptchaImage
 	img := *(image.RGBA)

@@ -6,7 +6,9 @@ import (
 	"image"
 	"image/png"
 	"net/http"
+	"regexp"
 	GETIMAGECD "sss/GetImageCd/proto/GetImageCd"
+	GETSMSCD "sss/GetSmsCd/proto/GetSmsCd"
 	"sss/ihomeWeb/utils"
 
 	"github.com/afocus/captcha"
@@ -155,4 +157,60 @@ func GetImageCode(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	// 	return
 	// }
 	// return
+}
+
+// 调获取短信验证码
+func GetSmsCode(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	beego.Info("获取短信验证码 GetSmsCode /api/v1.0/smscode/:mobile")
+	// 获取手机号,由于是直接使用：接收的，故可直接通过Name获取
+	mobile := ps.ByName("mobile")
+	// 获取url中的参数部分，？后面的都不属于url的部分，而是其携带的参数
+	// api/v1.0/smscode/22222?text=2222&id=a992d1e5-fc77-4963-a0fe-d52693469c5c
+	beego.Info("URL参数：", r.URL.Query())
+	// 获取输入的图片验证码、uuid
+	text := r.URL.Query()["text"][0]
+	uuid := r.URL.Query()["id"][0]
+	// 初步数据校验:手机号格式校验
+	//创建正则句柄
+	myreg := regexp.MustCompile(`0?(13|14|15|17|18|19)[0-9]{9}`)
+	//进行正则匹配
+	bo := myreg.MatchString(mobile)
+	// 手机号验证不通过，则直接返回相应从错误
+	if !bo {
+		response := map[string]interface{}{
+			"errno":  utils.RECODE_MOBILEERR,
+			"errmsg": utils.RecodeText(utils.RECODE_MOBILEERR),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		return
+	}
+	service := grpc.NewService()
+	service.Init()
+	smsCdSercice := GETSMSCD.NewGetSmsCdService("go.micro.srv.GetSmsCd", service.Client())
+	rsp, err := smsCdSercice.CallGetSmsCd(context.TODO(), &GETSMSCD.Request{
+		Mobile: mobile,
+		Uuid:   uuid,
+		Text:   text,
+	})
+
+	// 若发生错误
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	response := map[string]interface{}{
+		"errno":  rsp.Error,
+		"errmsg": rsp.ErrMsg,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	return
 }
