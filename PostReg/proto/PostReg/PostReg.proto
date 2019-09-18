@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package go.micro.srv.PostReg;
+
+service PostReg {
+	rpc CallPostReg(Request) returns (Response) {}
+
+}
+
+message Message {
+	string say = 1;
+}
+
+message Request {
+	string Mobile = 1;
+	string Password=2;
+	string SmsCode=3;
+}
+
+message Response {
+	string Error= 1;
+	string ErrMsg=2;
+	string SessionID=3;
+}
+

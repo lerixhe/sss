@@ -6,9 +6,11 @@ import (
 	"image"
 	"image/png"
 	"net/http"
+	"reflect"
 	"regexp"
 	GETIMAGECD "sss/GetImageCd/proto/GetImageCd"
 	GETSMSCD "sss/GetSmsCd/proto/GetSmsCd"
+	POSTREG "sss/PostReg/proto/PostReg"
 	"sss/ihomeWeb/utils"
 
 	"github.com/afocus/captcha"
@@ -203,6 +205,60 @@ func GetSmsCode(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
+	response := map[string]interface{}{
+		"errno":  rsp.Error,
+		"errmsg": rsp.ErrMsg,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	return
+}
+
+// 调用发送注册表单函数
+func PostReg(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	beego.Info("发送注册表单 PostReg /api/v1.0/users")
+	// 获取web发来的表单(json)使用map来接收
+	requestInfo := make(map[string]string)
+	err := json.NewDecoder(r.Body).Decode(&requestInfo)
+	// 若发生错误
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	// 遍历获取到的参数
+	for key, value := range requestInfo {
+		beego.Info(key + ":" + value + ":" + reflect.TypeOf(value).String())
+	}
+	// 数据基本校验：验空,失败则直接返回错误信息，并结束。
+	if requestInfo["mobile"] == "" || requestInfo["password"] == "" || requestInfo["sms_code"] == "" {
+		response := map[string]interface{}{
+			"errno":  utils.RECODE_NODATA,
+			"errmsg": utils.RecodeText(utils.RECODE_NODATA),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		return
+	}
+	// 校验完数据，开始GRPC调用微服务
+	service := grpc.NewService()
+	service.Init()
+	postRegService := POSTREG.NewPostRegService("go.micro.srv.PostReg", service.Client())
+	rsp, err := postRegService.CallPostReg(context.TODO(), &POSTREG.Request{
+		Mobile:   requestInfo["mobile"],
+		Password: requestInfo["password"],
+		SmsCode:  requestInfo["sms_code"],
+	})
+	// 若发生错误
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
 	response := map[string]interface{}{
 		"errno":  rsp.Error,
 		"errmsg": rsp.ErrMsg,
