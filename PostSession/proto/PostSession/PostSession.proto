@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package go.micro.srv.PostSession;
+
+service PostSession {
+	rpc CallPostSession(Request) returns (Response) {}
+
+}
+
+message Message {
+	string say = 1;
+}
+
+message Request {
+	string  Mobile= 1;
+	string Password=2;
+}
+
+message Response {
+	string Error = 1;
+	string ErrMsg=2;
+	string SessionID=3;
+}

@@ -51,7 +51,7 @@ func (e *GetImageCd) CallGetImageCd(ctx context.Context, req *GETIMAGECD.Request
 	bm, err := cache.NewCache("redis", string(redisConfJSON))
 	if err != nil {
 		beego.Info("缓存查询失败", err)
-		rsp.Error = utils.RECODE_DATAERR
+		rsp.Error = utils.RECODE_DBERR
 		rsp.Errmsg = utils.RecodeText(rsp.Error)
 		return err
 	}

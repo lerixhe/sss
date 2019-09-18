@@ -55,7 +55,7 @@ func (e *GetArea) GetAreas(ctx context.Context, req *GETAREA.Request, rsp *GETAR
 	bm, err := cache.NewCache("redis", string(redisConfJSON))
 	if err != nil {
 		beego.Info("缓存查询失败", err)
-		rsp.Error = utils.RECODE_DATAERR
+		rsp.Error = utils.RECODE_DBERR
 		rsp.Errmsg = utils.RecodeText(rsp.Error)
 		return err
 	}
@@ -87,7 +87,7 @@ func (e *GetArea) GetAreas(ctx context.Context, req *GETAREA.Request, rsp *GETAR
 	num, err := o.QueryTable("area").All(&areas, "Id", "Name")
 	if err != nil {
 		beego.Info("数据库查询失败", err)
-		rsp.Error = utils.RECODE_DATAERR
+		rsp.Error = utils.RECODE_DBERR
 		rsp.Errmsg = utils.RecodeText(rsp.Error)
 		return err
 	}
@@ -102,7 +102,7 @@ func (e *GetArea) GetAreas(ctx context.Context, req *GETAREA.Request, rsp *GETAR
 	err = bm.Put("area_info", areaJSON, time.Second*time.Duration(utils.G_redis_expire))
 	if err != nil {
 		beego.Info("数据库缓存失败", err)
-		rsp.Error = utils.RECODE_DATAERR
+		rsp.Error = utils.RECODE_DBERR
 		rsp.Errmsg = utils.RecodeText(rsp.Error)
 	}
 	// 将查询到的数据，按照proto的格式发送给web

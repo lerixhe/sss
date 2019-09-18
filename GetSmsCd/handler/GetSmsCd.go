@@ -49,14 +49,14 @@ func (e *GetSmsCd) CallGetSmsCd(ctx context.Context, req *GETSMSCD.Request, rsp 
 	bm, err := cache.NewCache("redis", string(redisConfJSON))
 	if err != nil {
 		beego.Info("缓存链接失败", err)
-		rsp.Error = utils.RECODE_DATAERR
+		rsp.Error = utils.RECODE_DBERR
 		rsp.ErrMsg = utils.RecodeText(rsp.Error)
 		return err
 	}
 	reply := bm.Get(uuid)
 	if reply == nil {
 		beego.Info("缓存查询结果为空")
-		rsp.Error = utils.RECODE_DATAERR
+		rsp.Error = utils.RECODE_NODATA
 		rsp.ErrMsg = utils.RecodeText(rsp.Error)
 		return nil
 	}

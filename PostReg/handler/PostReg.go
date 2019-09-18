@@ -2,8 +2,6 @@ package handler
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
 	POSTREG "sss/PostReg/proto/PostReg"
 	"sss/ihomeWeb/models"
@@ -45,7 +43,7 @@ func (e *PostReg) CallPostReg(ctx context.Context, req *POSTREG.Request, rsp *PO
 	bm, err := cache.NewCache("redis", string(redisConfJSON))
 	if err != nil {
 		beego.Info("缓存查询失败", err)
-		rsp.Error = utils.RECODE_DATAERR
+		rsp.Error = utils.RECODE_DBERR
 		rsp.ErrMsg = utils.RecodeText(rsp.Error)
 		return err
 	}
@@ -53,11 +51,11 @@ func (e *PostReg) CallPostReg(ctx context.Context, req *POSTREG.Request, rsp *PO
 	reply := bm.Get(mobile)
 	if reply == nil {
 		beego.Info("缓存查询结果为空:验证码")
-		rsp.Error = utils.RECODE_DATAERR
+		rsp.Error = utils.RECODE_NODATA
 		rsp.ErrMsg = utils.RecodeText(rsp.Error)
 		return nil
 	}
-	str, err := redis.String(reply, err)
+	str, _ := redis.String(reply, nil)
 	if str != smsCode {
 		beego.Info("短信验证码错误", str, "?", smsCode)
 		rsp.Error = utils.RECODE_SMSCDERR
@@ -68,7 +66,7 @@ func (e *PostReg) CallPostReg(ctx context.Context, req *POSTREG.Request, rsp *PO
 	// 1.构建用户数据结构
 	user := models.User{
 		Name:          mobile,
-		Password_hash: GetMd5String(password),
+		Password_hash: utils.GetMd5String(password),
 		Mobile:        mobile,
 	}
 	// 2.链接并操作数据库
@@ -82,18 +80,11 @@ func (e *PostReg) CallPostReg(ctx context.Context, req *POSTREG.Request, rsp *PO
 	}
 	beego.Info("用户注册成功，用户ID:", id)
 	// 给用户生成SessionID并返回
-	sessionID := GetMd5String(mobile + password)
+	sessionID := utils.GetMd5String(mobile + password)
 	rsp.SessionID = sessionID
 	// 用户信息存入缓存，格式key：sessionID+用户字段 vaule：字段值
 	bm.Put(sessionID+"user_id", id, time.Second*3600)
 	bm.Put(sessionID+"user_name", mobile, time.Second*3600)
 	bm.Put(sessionID+"user_mobile", mobile, time.Second*3600)
 	return nil
-}
-
-// md5工具函数
-func GetMd5String(s string) string {
-	h := md5.New()
-	h.Write([]byte(s))
-	return hex.EncodeToString(h.Sum(nil))
 }

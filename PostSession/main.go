@@ -1,20 +1,20 @@
 package main
 
 import (
-	"sss/GetSession/handler"
-	"sss/GetSession/subscriber"
+	"sss/PostSession/handler"
+	"sss/PostSession/subscriber"
 
 	"github.com/micro/go-micro"
 	"github.com/micro/go-micro/service/grpc"
 	"github.com/micro/go-micro/util/log"
 
-	GETSESSION "sss/GetSession/proto/GetSession"
+	POSTSESSION "sss/PostSession/proto/PostSession"
 )
 
 func main() {
 	// New Service
 	service := grpc.NewService(
-		micro.Name("go.micro.srv.GetSession"),
+		micro.Name("go.micro.srv.PostSession"),
 		micro.Version("latest"),
 	)
 
@@ -22,13 +22,13 @@ func main() {
 	service.Init()
 
 	// Register Handler
-	GETSESSION.RegisterGetSessionHandler(service.Server(), new(handler.GetSession))
+	POSTSESSION.RegisterPostSessionHandler(service.Server(), new(handler.PostSession))
 
 	// Register Struct as Subscriber
-	micro.RegisterSubscriber("go.micro.srv.GetSession", service.Server(), new(subscriber.GetSession))
+	micro.RegisterSubscriber("go.micro.srv.PostSession", service.Server(), new(subscriber.PostSession))
 
 	// Register Function as Subscriber
-	micro.RegisterSubscriber("go.micro.srv.GetSession", service.Server(), subscriber.Handler)
+	micro.RegisterSubscriber("go.micro.srv.PostSession", service.Server(), subscriber.Handler)
 
 	// Run service
 	if err := service.Run(); err != nil {

@@ -37,14 +37,14 @@ func (e *GetSession) CallGetSession(ctx context.Context, req *GETSESSION.Request
 	bm, err := cache.NewCache("redis", string(redisConfJSON))
 	if err != nil {
 		beego.Info("缓存查询失败", err)
-		rsp.Error = utils.RECODE_DATAERR
+		rsp.Error = utils.RECODE_DBERR
 		rsp.ErrMsg = utils.RecodeText(rsp.Error)
 		return err
 	}
 	reply := bm.Get(sessionID + "user_name")
 	if reply == nil {
 		beego.Info("缓存查询结果为空")
-		rsp.Error = utils.RECODE_DATAERR
+		rsp.Error = utils.RECODE_NODATA
 		rsp.ErrMsg = utils.RecodeText(rsp.Error)
 		return nil
 	}

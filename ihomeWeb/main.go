@@ -35,6 +35,8 @@ func main() {
 	rou.GET("/api/v1.0/session", handler.GetSession)
 	// 提交登录请求
 	rou.POST("/api/v1.0/session", handler.PostSession)
+	// 退出登录请求
+	rou.DELETE("/api/v1.0/session", handler.DeleteSession)
 	// 获取首页轮播请求
 	rou.GET("/api/v1.0/house/index", handler.GetIndex)
 	// 获取验证码图片

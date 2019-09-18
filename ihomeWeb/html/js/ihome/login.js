@@ -31,7 +31,7 @@ $(document).ready(function() {
         // 将data转为json字符串
         var jsonData = JSON.stringify(data);
         $.ajax({
-            url:"/api/v1.0/sessions",
+            url:"/api/v1.0/session",
             type:"post",
             data: jsonData,
             contentType: "application/json",

@@ -12,6 +12,7 @@ import (
 	GETSESSION "sss/GetSession/proto/GetSession"
 	GETSMSCD "sss/GetSmsCd/proto/GetSmsCd"
 	POSTREG "sss/PostReg/proto/PostReg"
+	POSTSESSION "sss/PostSession/proto/PostSession"
 	"sss/ihomeWeb/utils"
 
 	"github.com/afocus/captcha"
@@ -138,6 +139,99 @@ func GetIndex(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 	return
+}
+
+// 登录
+
+func PostSession(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	beego.Info("用户登录 PostSession api/v1.0/session")
+	// 获取客户端提交的表单
+	data := make(map[string]string)
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		beego.Info("表单解析失败", err)
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	// 取得数据并校验
+	if data["mobile"] == "" || data["password"] == "" {
+		beego.Info("表单数据不完整")
+		response := map[string]interface{}{
+			"errno":  utils.RECODE_NODATA,
+			"errmsg": utils.RecodeText(utils.RECODE_NODATA),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		return
+	}
+
+	// 调用微服务，回复是否通过登录验证
+	service := grpc.NewService()
+	service.Init()
+	sessionService := POSTSESSION.NewPostSessionService("go.micro.srv.PostSession", service.Client())
+	rsp, err := sessionService.CallPostSession(context.TODO(), &POSTSESSION.Request{
+		Mobile:   data["mobile"],
+		Password: data["password"],
+	})
+	// 若发生错误
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	// 若通过验证，拿到服务回复中的sessioniD
+	sessionID := rsp.GetSessionID()
+	// 读取cookie
+	cookie, err := r.Cookie("userlogin")
+	// 如果没读取到或者出错，则设置cookie
+	if err != nil || cookie.Value == "" {
+		newcookie := http.Cookie{
+			Name:   "userlogin",
+			Value:  sessionID,
+			Path:   "/",
+			MaxAge: 600,
+		}
+		http.SetCookie(w, &newcookie)
+	}
+	response := map[string]interface{}{
+		"errno":  rsp.GetError(),
+		"errmsg": rsp.GetErrMsg(),
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+}
+
+// 退出登录
+func DeleteSession(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	beego.Info("用户退出登录 DeleteSession api/v1.0/session")
+
+	// 调用微服务，回复是否通过登录验证
+	service := grpc.NewService()
+	service.Init()
+	sessionService := DELETESESSION.NewPostSessionService("go.micro.srv.DeleteSession", service.Client())
+	rsp, err := sessionService.CallDeleteSession(context.TODO(), &DELETESESSION.Request{})
+	// 若发生错误
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	response := map[string]interface{}{
+		"errno":  rsp.GetError(),
+		"errmsg": rsp.GetErrMsg(),
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
 }
 
 // 调获取验证码图片
