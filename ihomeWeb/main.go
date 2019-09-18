@@ -33,6 +33,8 @@ func main() {
 	rou.GET("/api/v1.0/areas", handler.GetArea)
 	// 获取session请求
 	rou.GET("/api/v1.0/session", handler.GetSession)
+	// 提交登录请求
+	rou.POST("/api/v1.0/session", handler.PostSession)
 	// 获取首页轮播请求
 	rou.GET("/api/v1.0/house/index", handler.GetIndex)
 	// 获取验证码图片
@@ -41,7 +43,6 @@ func main() {
 	rou.GET("/api/v1.0/smscode/:mobile", handler.GetSmsCode)
 	// 提交注册表单
 	rou.POST("/api/v1.0/users", handler.PostReg)
-
 	// 注册服务
 	service.Handle("/", rou)
 

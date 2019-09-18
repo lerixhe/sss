@@ -60,7 +60,7 @@ func (e *GetSmsCd) CallGetSmsCd(ctx context.Context, req *GETSMSCD.Request, rsp 
 		rsp.ErrMsg = utils.RecodeText(rsp.Error)
 		return nil
 	}
-	str, err := redis.String(reply, err)
+	str, _ := redis.String(reply, nil)
 	if str != text {
 		beego.Info("图片验证码错误", str, "?", text)
 		rsp.Error = utils.RECODE_IMAGECDERR

@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"regexp"
 	GETIMAGECD "sss/GetImageCd/proto/GetImageCd"
+	GETSESSION "sss/GetSession/proto/GetSession"
 	GETSMSCD "sss/GetSmsCd/proto/GetSmsCd"
 	POSTREG "sss/PostReg/proto/PostReg"
 	"sss/ihomeWeb/utils"
@@ -69,20 +70,41 @@ func GetArea(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 // 调用远程方法的函数：获取session
 func GetSession(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	beego.Info("获取登录状态 GetISession api/v1.0/session")
+	// 取出cookies
+	cookie, err := r.Cookie("userlogin")
+	if err != nil {
+		// 用户未登录，直接返回
+		response := map[string]interface{}{
+			"errno":  utils.RECODE_SESSIONERR,
+			"errmsg": utils.RecodeText(utils.RECODE_SESSIONERR),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		return
+	}
+	// 调用微服务
+	service := grpc.NewService()
+	service.Init()
+	sessionService := GETSESSION.NewGetSessionService("go.micro.srv.GetSession", service.Client())
+	rsp, err := sessionService.CallGetSession(context.TODO(), &GETSESSION.Request{
+		SessionID: cookie.Value,
+	})
 
-	// service := grpc.NewService()
-	// service.Init()
-	// areaService := GETAREA.NewGetAreaService("go.micro.srv.GetArea", service.Client())
-	// res, err := areaService.GetAreas(context.TODO(), &GETAREA.Request{})
-	// // 若发生错误
-	// if err != nil {
-	// 	http.Error(w, err.Error(), 500)
-	// 	return
-	// }
-
+	// 若发生错误
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	// 由于前端所需接口有个json,这里构造一下结构
+	data := make(map[string]string)
+	data["name"] = rsp.GetName()
 	response := map[string]interface{}{
-		"errno":  utils.RECODE_SESSIONERR,
-		"errmsg": utils.RecodeText(utils.RECODE_SESSIONERR),
+		"errno":  rsp.GetError(),
+		"errmsg": rsp.GetErrMsg(),
+		"data":   data,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
