@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"reflect"
 	"regexp"
+	DELETESESSION "sss/DeleteSession/proto/DeleteSession"
+	GETAREA "sss/GetArea/proto/GetArea"
 	GETIMAGECD "sss/GetImageCd/proto/GetImageCd"
 	GETSESSION "sss/GetSession/proto/GetSession"
 	GETSMSCD "sss/GetSmsCd/proto/GetSmsCd"
@@ -18,8 +20,6 @@ import (
 	"github.com/afocus/captcha"
 
 	"github.com/astaxie/beego"
-
-	GETAREA "sss/GetArea/proto/GetArea"
 
 	"sss/ihomeWeb/models"
 
@@ -210,18 +210,43 @@ func PostSession(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 // 退出登录
 func DeleteSession(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	beego.Info("用户退出登录 DeleteSession api/v1.0/session")
-
-	// 调用微服务，回复是否通过登录验证
+	// 从cookies中获取sessionID
+	cookie, err := r.Cookie("userlogin")
+	if err != nil || cookie.Value == "" {
+		// 说明用户本没有登录，返回对应信息即可
+		response := map[string]interface{}{
+			"errno":  utils.RECODE_SESSIONERR,
+			"errmsg": utils.RecodeText(utils.RECODE_SESSIONERR),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		return
+	}
+	// 调用微服务，将服务器端session删除，并返回删除结果
 	service := grpc.NewService()
 	service.Init()
-	sessionService := DELETESESSION.NewPostSessionService("go.micro.srv.DeleteSession", service.Client())
-	rsp, err := sessionService.CallDeleteSession(context.TODO(), &DELETESESSION.Request{})
+	sessionService := DELETESESSION.NewDeleteSessionService("go.micro.srv.DeleteSession", service.Client())
+	rsp, err := sessionService.CallDeleteSession(context.TODO(), &DELETESESSION.Request{
+		SessionID: cookie.Value,
+	})
 	// 若发生错误
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 
+	// 设置cookie失效,可以不做，但最好做
+	newCookie := http.Cookie{
+		Name:   "userlogin",
+		Path:   "/",
+		MaxAge: -1,
+		Value:  "",
+	}
+	http.SetCookie(w, &newCookie)
+	//返回给前端的数据
 	response := map[string]interface{}{
 		"errno":  rsp.GetError(),
 		"errmsg": rsp.GetErrMsg(),

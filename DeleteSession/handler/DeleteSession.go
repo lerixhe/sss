@@ -2,47 +2,47 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
+	DELETESESSION "sss/DeleteSession/proto/DeleteSession"
+	"sss/ihomeWeb/utils"
 
-	"github.com/micro/go-micro/util/log"
-
-	DeleteSession "sss/DeleteSession/proto/DeleteSession"
+	"github.com/astaxie/beego"
+	"github.com/astaxie/beego/cache"
+	_ "github.com/astaxie/beego/cache/redis"
+	_ "github.com/gomodule/redigo/redis"
 )
 
 type DeleteSession struct{}
 
 // Call is a single request handler called via client.Call or the generated client code
-func (e *DeleteSession) Call(ctx context.Context, req *DeleteSession.Request, rsp *DeleteSession.Response) error {
-	log.Log("Received DeleteSession.Call request")
-	rsp.Msg = "Hello " + req.Name
-	return nil
-}
-
-// Stream is a server side stream handler called via client.Stream or the generated client code
-func (e *DeleteSession) Stream(ctx context.Context, req *DeleteSession.StreamingRequest, stream DeleteSession.DeleteSession_StreamStream) error {
-	log.Logf("Received DeleteSession.Stream request with count: %d", req.Count)
-
-	for i := 0; i < int(req.Count); i++ {
-		log.Logf("Responding: %d", i)
-		if err := stream.Send(&DeleteSession.StreamingResponse{
-			Count: int64(i),
-		}); err != nil {
-			return err
-		}
+func (e *DeleteSession) CallDeleteSession(ctx context.Context, req *DELETESESSION.Request, rsp *DELETESESSION.Response) error {
+	beego.Info("用户退出登录 DeleteSession api/v1.0/session")
+	// 初始化rsp
+	rsp.Error = utils.RECODE_OK
+	rsp.ErrMsg = utils.RecodeText(rsp.Error)
+	// 获取请求中的参数
+	sessionID := req.GetSessionID()
+	// 链接redis
+	redisConf := map[string]string{
+		"key":      utils.G_server_name,
+		"conn":     utils.G_redis_addr + ":" + utils.G_redis_port,
+		"dbNum":    utils.G_redis_dbnum,
+		"password": utils.G_redis_auth,
 	}
+	// 将map转换为json
+	redisConfJSON, _ := json.Marshal(redisConf)
+	// 链接redis
+	bm, err := cache.NewCache("redis", string(redisConfJSON))
+	if err != nil {
+		beego.Info("缓存查询失败", err)
+		rsp.Error = utils.RECODE_DBERR
+		rsp.ErrMsg = utils.RecodeText(rsp.Error)
+		return err
+	}
+	// 删除缓存
+	bm.Delete(sessionID + "user_id")
+	bm.Delete(sessionID + "user_name")
+	bm.Delete(sessionID + "user_mobile")
 
 	return nil
-}
-
-// PingPong is a bidirectional stream handler called via client.Stream or the generated client code
-func (e *DeleteSession) PingPong(ctx context.Context, stream DeleteSession.DeleteSession_PingPongStream) error {
-	for {
-		req, err := stream.Recv()
-		if err != nil {
-			return err
-		}
-		log.Logf("Got ping %v", req.Stroke)
-		if err := stream.Send(&DeleteSession.Pong{Stroke: req.Stroke}); err != nil {
-			return err
-		}
-	}
 }
