@@ -45,6 +45,9 @@ func main() {
 	rou.GET("/api/v1.0/smscode/:mobile", handler.GetSmsCode)
 	// 提交注册表单
 	rou.POST("/api/v1.0/users", handler.PostReg)
+	// 获取用户信息
+	rou.GET("/api/v1.0/user", handler.GetUserInfo)
+
 	// 注册服务
 	service.Handle("/", rou)
 

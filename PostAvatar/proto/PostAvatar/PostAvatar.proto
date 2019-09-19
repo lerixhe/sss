@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package go.micro.srv.PostAvatar;
+
+service PostAvatar {
+	rpc Call(Request) returns (Response) {}
+}
+
+message Message {
+	string say = 1;
+}
+
+message Request {
+	// 图片的二进制数据
+	bytes  Avatar  = 1;
+	// 上传者凭证
+	string SessionID =2
+}
+
+message Response {
+	string Error = 1;
+	string ErrMsg=2;
+}
+
+message StreamingRequest {
+	int64 count = 1;
+}
+
+message StreamingResponse {
+	int64 count = 1;
+}
+
+message Ping {
+	int64 stroke = 1;
+}
+
+message Pong {
+	int64 stroke = 1;
+}
