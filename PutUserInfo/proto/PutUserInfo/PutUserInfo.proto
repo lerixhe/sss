@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package go.micro.srv.PutUserInfo;
+
+service PutUserInfo {
+	rpc CallPutUserInfo(Request) returns (Response) {}
+}
+
+message Message {
+	string say = 1;
+}
+
+message Request {
+	string SessionID = 1;
+	string NewName=2;
+}
+
+message Response {
+	string Error = 1;
+	string ErrMsg=2;
+	string NewName=3;
+}

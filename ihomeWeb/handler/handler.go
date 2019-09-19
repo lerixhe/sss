@@ -17,6 +17,7 @@ import (
 	POSTAVATAR "sss/PostAvatar/proto/PostAvatar"
 	POSTREG "sss/PostReg/proto/PostReg"
 	POSTSESSION "sss/PostSession/proto/PostSession"
+	PUTUSERINFO "sss/PutUserInfo/proto/PutUserInfo"
 	"sss/ihomeWeb/utils"
 
 	"github.com/afocus/captcha"
@@ -546,6 +547,66 @@ func PostAvatar(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		"errno":  rsp.Error,
 		"errmsg": rsp.ErrMsg,
 		"data":   data,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	return
+}
+
+// 更新用户名
+func PutUserInfo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	beego.Info("更新用户名 PutUserInfo /api/v1.0/user/name")
+	// 获取客户端提交的json表单
+	data := make(map[string]string)
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		beego.Info("表单解析失败", err)
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	beego.Info("用户提交新用户名", data["name"])
+	// 获取用户cookie中的sessionID
+	cookie, err := r.Cookie("userlogin")
+	if err != nil || cookie.Value == "" {
+		// 说明用户本没有登录，返回对应信息即可
+		response := map[string]interface{}{
+			"errno":  utils.RECODE_SESSIONERR,
+			"errmsg": utils.RecodeText(utils.RECODE_SESSIONERR),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		return
+	}
+
+	// 开始调用微服务
+	service := grpc.NewService()
+	service.Init()
+	putUserInfoService := PUTUSERINFO.NewPutUserInfoService("go.micro.srv.PutUserInfo", service.Client())
+	rsp, err := putUserInfoService.CallPutUserInfo(context.TODO(), &PUTUSERINFO.Request{
+		SessionID: cookie.Value,
+		NewName:   data["name"],
+	})
+	// 若发生错误
+	if err != nil {
+		beego.Info("RPC错误")
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	// 构造前端接受的data结构，接收rsp中的参数
+	databack := make(map[string]interface{})
+	databack["name"] = rsp.GetNewName()
+
+	// 给前端返回数据
+	response := map[string]interface{}{
+		"errno":  rsp.Error,
+		"errmsg": rsp.ErrMsg,
+		"data":   databack,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
