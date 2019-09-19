@@ -6,6 +6,7 @@ import (
 	POSTREG "sss/PostReg/proto/PostReg"
 	"sss/ihomeWeb/models"
 	"sss/ihomeWeb/utils"
+	"strconv"
 	"time"
 
 	"github.com/astaxie/beego/orm"
@@ -49,8 +50,12 @@ func (e *PostReg) CallPostReg(ctx context.Context, req *POSTREG.Request, rsp *PO
 	}
 	// 取出验证码信息
 	reply := bm.Get(mobile)
+	// 	测试账号绿色通道.1~100，短信验证码固定为123
+	if i, _ := strconv.Atoi(mobile); i <= 100 && i >= 1 {
+		reply = "123"
+	}
 	if reply == nil {
-		beego.Info("缓存查询结果为空:验证码")
+		beego.Info("缓存查询结果为空:验证码1")
 		rsp.Error = utils.RECODE_NODATA
 		rsp.ErrMsg = utils.RecodeText(rsp.Error)
 		return nil

@@ -1,17 +1,19 @@
 package main
 
 import (
-	"github.com/micro/go-micro/util/log"
-	"github.com/micro/go-micro"
 	"sss/PostUserAuth/handler"
 	"sss/PostUserAuth/subscriber"
 
-	PostUserAuth "sss/PostUserAuth/proto/PostUserAuth"
+	"github.com/micro/go-micro"
+	"github.com/micro/go-micro/service/grpc"
+	"github.com/micro/go-micro/util/log"
+
+	POSTUSERAUTH "sss/PostUserAuth/proto/PostUserAuth"
 )
 
 func main() {
 	// New Service
-	service := micro.NewService(
+	service := grpc.NewService(
 		micro.Name("go.micro.srv.PostUserAuth"),
 		micro.Version("latest"),
 	)
@@ -20,7 +22,7 @@ func main() {
 	service.Init()
 
 	// Register Handler
-	PostUserAuth.RegisterPostUserAuthHandler(service.Server(), new(handler.PostUserAuth))
+	POSTUSERAUTH.RegisterPostUserAuthHandler(service.Server(), new(handler.PostUserAuth))
 
 	// Register Struct as Subscriber
 	micro.RegisterSubscriber("go.micro.srv.PostUserAuth", service.Server(), new(subscriber.PostUserAuth))
