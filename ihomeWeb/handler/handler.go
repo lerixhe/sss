@@ -14,6 +14,7 @@ import (
 	GETSESSION "sss/GetSession/proto/GetSession"
 	GETSMSCD "sss/GetSmsCd/proto/GetSmsCd"
 	GETUSERINFO "sss/GetUserInfo/proto/GetUserInfo"
+	POSTAVATAR "sss/PostAvatar/proto/PostAvatar"
 	POSTREG "sss/PostReg/proto/PostReg"
 	POSTSESSION "sss/PostSession/proto/PostSession"
 	"sss/ihomeWeb/utils"
@@ -454,6 +455,93 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	data["id_card"] = rsp.GetIDCard()
 	data["avatar_url"] = utils.AddDomain2Url(rsp.GetAvatarUrl())
 
+	response := map[string]interface{}{
+		"errno":  rsp.Error,
+		"errmsg": rsp.ErrMsg,
+		"data":   data,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	return
+}
+
+// 上传用户头像
+func PostAvatar(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	beego.Info("上传用户头像 PostAvatar /api/v1.0/user/avatar")
+	// 从r中接收图片流
+	file, header, err := r.FormFile("avatar")
+	if err != nil {
+		// 直接给前端返回错误
+		response := map[string]interface{}{
+			"errno":  utils.RECODE_DATAERR,
+			"errmsg": utils.RecodeText(utils.RECODE_DATAERR),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		return
+	}
+	//输出日志
+	beego.Info("文件大小：", header.Size)
+	beego.Info("文件名称：", header.Filename)
+	// 使用切片接收文件流
+	filebuf := make([]byte, header.Size)
+	_, err = file.Read(filebuf)
+	if err != nil {
+		// 直接给前端返回错误
+		response := map[string]interface{}{
+			"errno":  utils.RECODE_DATAERR,
+			"errmsg": utils.RecodeText(utils.RECODE_DATAERR),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		return
+	}
+
+	// 从cookies中获取sessionID
+	cookie, err := r.Cookie("userlogin")
+	if err != nil || cookie.Value == "" {
+		// 说明用户本没有登录，返回对应信息即可
+		response := map[string]interface{}{
+			"errno":  utils.RECODE_SESSIONERR,
+			"errmsg": utils.RecodeText(utils.RECODE_SESSIONERR),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		return
+	}
+	// 开始调用微服务
+	service := grpc.NewService()
+	service.Init()
+	postAvatarService := POSTAVATAR.NewPostAvatarService("go.micro.srv.PostAvatar", service.Client())
+	rsp, err := postAvatarService.CallPostAvatar(context.TODO(), &POSTAVATAR.Request{
+		SessionID: cookie.Value,
+		Avatar:    filebuf,
+		FileExt:   header.Filename,
+		FileSize:  header.Size,
+	})
+	// 若发生错误
+	if err != nil {
+		beego.Info("RPC错误")
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	// 构造前端接受的data结构，接收rsp中的参数
+	data := make(map[string]interface{})
+	data["avatar_url"] = utils.AddDomain2Url(rsp.GetAvatarUrl())
+
+	// 给前端返回数据
 	response := map[string]interface{}{
 		"errno":  rsp.Error,
 		"errmsg": rsp.ErrMsg,

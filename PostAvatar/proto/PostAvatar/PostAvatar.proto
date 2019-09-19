@@ -3,7 +3,7 @@ syntax = "proto3";
 package go.micro.srv.PostAvatar;
 
 service PostAvatar {
-	rpc Call(Request) returns (Response) {}
+	rpc CallPostAvatar(Request) returns (Response) {}
 }
 
 message Message {
@@ -14,26 +14,19 @@ message Request {
 	// 图片的二进制数据
 	bytes  Avatar  = 1;
 	// 上传者凭证
-	string SessionID =2
+	string SessionID =2;
+	// 文件拓展名
+	string FileExt=3;
+	// 文件大小
+	sint64 FileSize=4;
+
 }
 
 message Response {
+	// 错误码
 	string Error = 1;
+	// 错误信息
 	string ErrMsg=2;
-}
-
-message StreamingRequest {
-	int64 count = 1;
-}
-
-message StreamingResponse {
-	int64 count = 1;
-}
-
-message Ping {
-	int64 stroke = 1;
-}
-
-message Pong {
-	int64 stroke = 1;
+	// 头像图片地址
+	string AvatarUrl=3;
 }

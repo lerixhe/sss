@@ -72,7 +72,7 @@ func (e *GetUserInfo) CallGetUserInfo(ctx context.Context, req *GETUSERINFO.Requ
 	rsp.Mobile = user.Mobile
 	rsp.RealName = user.Real_name
 	rsp.IDCard = user.Id_card
-	rsp.AvatarUrl = user.Avatar_url
+	rsp.AvatarUrl = utils.AddDomain2Url(user.Avatar_url)
 
 	return nil
 }

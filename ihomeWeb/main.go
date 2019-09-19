@@ -47,6 +47,8 @@ func main() {
 	rou.POST("/api/v1.0/users", handler.PostReg)
 	// 获取用户信息
 	rou.GET("/api/v1.0/user", handler.GetUserInfo)
+	// 上传用户头像
+	rou.POST("/api/v1.0/user/avatar", handler.PostAvatar)
 
 	// 注册服务
 	service.Handle("/", rou)
