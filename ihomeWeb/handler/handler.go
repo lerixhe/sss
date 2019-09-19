@@ -615,3 +615,111 @@ func PutUserInfo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}
 	return
 }
+
+// 获取用户实名认证状态
+func GetUserAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	beego.Info("获取用户实名认证状态 GetUserAuth /api/v1.0/user/auth")
+	// 从cookies中获取sessionID
+	cookie, err := r.Cookie("userlogin")
+	if err != nil || cookie.Value == "" {
+		// 说明用户本没有登录，返回对应信息即可
+		response := map[string]interface{}{
+			"errno":  utils.RECODE_SESSIONERR,
+			"errmsg": utils.RecodeText(utils.RECODE_SESSIONERR),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			beego.Info("json转码错误")
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		return
+	}
+	// 调用微服务
+	service := grpc.NewService()
+	service.Init()
+	getUserInfoService := GETUSERINFO.NewGetUserInfoService("go.micro.srv.GetUserInfo", service.Client())
+	rsp, err := getUserInfoService.CallGetUserInfo(context.TODO(), &GETUSERINFO.Request{
+		SessionID: cookie.Value,
+	})
+	// 若发生错误
+	if err != nil {
+		beego.Info("RPC错误")
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	// 构造前端接受的data结构，接收rsp中的参数
+	data := make(map[string]interface{})
+	data["user_id"] = rsp.GetUserID()
+	data["name"] = rsp.GetName()
+	data["mobile"] = rsp.GetMobile()
+	data["real_name"] = rsp.GetRealName()
+	data["id_card"] = rsp.GetIDCard()
+	data["avatar_url"] = utils.AddDomain2Url(rsp.GetAvatarUrl())
+
+	response := map[string]interface{}{
+		"errno":  rsp.Error,
+		"errmsg": rsp.ErrMsg,
+		"data":   data,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	return
+}
+PostUserAuth
+// 获取用户实名认证状态
+func GetUserAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	beego.Info("获取用户实名认证状态 GetUserAuth /api/v1.0/user/auth")
+	// 从cookies中获取sessionID
+	cookie, err := r.Cookie("userlogin")
+	if err != nil || cookie.Value == "" {
+		// 说明用户本没有登录，返回对应信息即可
+		response := map[string]interface{}{
+			"errno":  utils.RECODE_SESSIONERR,
+			"errmsg": utils.RecodeText(utils.RECODE_SESSIONERR),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			beego.Info("json转码错误")
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		return
+	}
+	// 调用微服务
+	service := grpc.NewService()
+	service.Init()
+	getUserInfoService := GETUSERINFO.NewGetUserInfoService("go.micro.srv.GetUserInfo", service.Client())
+	rsp, err := getUserInfoService.CallGetUserInfo(context.TODO(), &GETUSERINFO.Request{
+		SessionID: cookie.Value,
+	})
+	// 若发生错误
+	if err != nil {
+		beego.Info("RPC错误")
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	// 构造前端接受的data结构，接收rsp中的参数
+	data := make(map[string]interface{})
+	data["user_id"] = rsp.GetUserID()
+	data["name"] = rsp.GetName()
+	data["mobile"] = rsp.GetMobile()
+	data["real_name"] = rsp.GetRealName()
+	data["id_card"] = rsp.GetIDCard()
+	data["avatar_url"] = utils.AddDomain2Url(rsp.GetAvatarUrl())
+
+	response := map[string]interface{}{
+		"errno":  rsp.Error,
+		"errmsg": rsp.ErrMsg,
+		"data":   data,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	return
+}
