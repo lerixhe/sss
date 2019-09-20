@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package go.micro.srv.GetUserHouses;
+
+service GetUserHouses {
+	rpc CallGetUserHouses(Request) returns (Response) {}
+}
+
+message Message {
+	string say = 1;
+}
+
+message Request {
+	string SessionID = 1;
+}
+
+message Response {
+	string Error = 1;
+	string ErrMsg=2;
+	// 查询到的序列化数据
+	bytes Mix =3;
+}

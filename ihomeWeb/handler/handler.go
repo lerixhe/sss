@@ -13,6 +13,7 @@ import (
 	GETIMAGECD "sss/GetImageCd/proto/GetImageCd"
 	GETSESSION "sss/GetSession/proto/GetSession"
 	GETSMSCD "sss/GetSmsCd/proto/GetSmsCd"
+	GETUSERHOUSES "sss/GetUserHouses/proto/GetUserHouses"
 	GETUSERINFO "sss/GetUserInfo/proto/GetUserInfo"
 	POSTAVATAR "sss/PostAvatar/proto/PostAvatar"
 	POSTREG "sss/PostReg/proto/PostReg"
@@ -737,6 +738,60 @@ func PostUserAuth(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	response := map[string]interface{}{
 		"errno":  rsp.Error,
 		"errmsg": rsp.ErrMsg,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	return
+}
+
+// 获取用户房源
+func GetUserHouses(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	beego.Info("获取用户房源 GetUserHousers /api/v1.0/user/houses")
+	// 从cookies中获取sessionID
+	cookie, err := r.Cookie("userlogin")
+	if err != nil || cookie.Value == "" {
+		// 说明用户本没有登录，返回对应信息即可
+		response := map[string]interface{}{
+			"errno":  utils.RECODE_SESSIONERR,
+			"errmsg": utils.RecodeText(utils.RECODE_SESSIONERR),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			beego.Info("json转码错误")
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		return
+	}
+	// 调用微服务
+	service := grpc.NewService()
+	service.Init()
+	getUserHouses := GETUSERHOUSES.NewGetUserHousesService("go.micro.srv.GetUserHouses", service.Client())
+	rsp, err := getUserHouses.CallGetUserHouses(context.TODO(), &GETUSERHOUSES.Request{
+		SessionID: cookie.Value,
+	})
+	// 若发生错误
+	if err != nil {
+		beego.Info("RPC错误")
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	//接收rsp中的二进制流,复杂数据类型传输，这里采用json的二进制流形式，
+	data := rsp.GetMix()
+	houseList := []models.House{}
+	err = json.Unmarshal(data, &houseList)
+	if err != nil {
+		beego.Info("json转码错误")
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	response := map[string]interface{}{
+		"errno":  rsp.Error,
+		"errmsg": rsp.ErrMsg,
+		"data":   houseList,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {

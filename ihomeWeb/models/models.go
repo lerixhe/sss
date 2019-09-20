@@ -76,8 +76,8 @@ var HOME_PAGE_MAX_HOUSES int = 5
 //房屋列表页面每页显示条目数
 var HOUSE_LIST_PAGE_CAPACITY int = 2
 
-//处理房子信息
-func (this *House) To_house_info() interface{} {
+//处理1个房子简略信息:将结构体转为map
+func (this *House) To_house_info() map[string]interface{} {
 	house_info := map[string]interface{}{
 		"house_id":    this.Id,
 		"title":       this.Title,
@@ -93,7 +93,7 @@ func (this *House) To_house_info() interface{} {
 	return house_info
 }
 
-//处理1个房子的全部信息
+//处理1个房子的全部信息：将结构体转为map
 func (this *House) To_one_house_desc() interface{} {
 	house_desc := map[string]interface{}{
 		"hid":         this.Id,

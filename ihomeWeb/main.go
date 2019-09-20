@@ -55,6 +55,8 @@ func main() {
 	rou.GET("/api/v1.0/user/auth", handler.GetUserAuth)
 	// 发送进行实名认证请求
 	rou.POST("/api/v1.0/user/auth", handler.PostUserAuth)
+	// 获取用户房源
+	rou.GET("/api/v1.0/user/houses", handler.GetUserHouses)
 	// 注册服务
 	service.Handle("/", rou)
 

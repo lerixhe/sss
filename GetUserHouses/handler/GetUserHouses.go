@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"reflect"
 	"sss/ihomeWeb/models"
-	"sss/ihomeWeb/utils"
 
 	"github.com/astaxie/beego/orm"
 
-	GETUSERINFO "sss/GetUserInfo/proto/GetUserInfo"
+	GETUSERHOUSES "sss/GetUserHouses/proto/GetUserHouses"
+	"sss/ihomeWeb/utils"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/cache"
@@ -18,17 +18,18 @@ import (
 	_ "github.com/gomodule/redigo/redis"
 )
 
-type GetUserInfo struct{}
+type GetUserHouses struct{}
 
 // Call is a single request handler called via client.Call or the generated client code
-func (e *GetUserInfo) CallGetUserInfo(ctx context.Context, req *GETUSERINFO.Request, rsp *GETUSERINFO.Response) error {
-	beego.Info("获取用户信息 GetUserInfo /api/v1.0/users")
-	// 初始化rsp
+func (e *GetUserHouses) CallGetUserHouses(ctx context.Context, req *GETUSERHOUSES.Request, rsp *GETUSERHOUSES.Response) error {
+	beego.Info("获取用户房源 GetUserHousers /api/v1.0/user/houses")
+	// 初始化回复
 	rsp.Error = utils.RECODE_OK
 	rsp.ErrMsg = utils.RecodeText(rsp.Error)
-	// 取得req参数
+	// 获取请求参数
 	sessionID := req.GetSessionID()
-	//利用sessionID在缓存中读出用户ID
+
+	// 读取redis链接配置
 	redisConf := map[string]string{
 		"key":      utils.G_server_name,
 		"conn":     utils.G_redis_addr + ":" + utils.G_redis_port,
@@ -37,8 +38,7 @@ func (e *GetUserInfo) CallGetUserInfo(ctx context.Context, req *GETUSERINFO.Requ
 	}
 	// 将map转换为json
 	redisConfJSON, _ := json.Marshal(redisConf)
-
-	// 链接redis,读出id
+	// 开始链接redis
 	bm, err := cache.NewCache("redis", string(redisConfJSON))
 	if err != nil {
 		beego.Info("缓存查询失败", err)
@@ -46,6 +46,7 @@ func (e *GetUserInfo) CallGetUserInfo(ctx context.Context, req *GETUSERINFO.Requ
 		rsp.ErrMsg = utils.RecodeText(rsp.Error)
 		return err
 	}
+	// 验证sessionID，并得到id
 	reply := bm.Get(sessionID + "user_id")
 	if reply == nil {
 		beego.Info("缓存查询结果为空")
@@ -61,18 +62,22 @@ func (e *GetUserInfo) CallGetUserInfo(ctx context.Context, req *GETUSERINFO.Requ
 		rsp.ErrMsg = utils.RecodeText(rsp.Error)
 		return err
 	}
-	// 链接数据库，读出用户其他信息
-	user := models.User{Id: id}
+	houseList := []models.House{}
+	// 根据id查询house与user表，得到该id下的house列表
 	o := orm.NewOrm()
-	o.Read(&user)
-	beego.Info(user)
-	// rsp
-	rsp.UserID = int64(user.Id)
-	rsp.Name = user.Name
-	rsp.Mobile = user.Mobile
-	rsp.RealName = user.Real_name
-	rsp.IDCard = user.Id_card
-	rsp.AvatarUrl = user.Avatar_url
-
+	_, err = o.QueryTable("House").Filter("User", id).All(&houseList)
+	if err != nil {
+		beego.Info("房屋数据查询失败", err)
+		rsp.Error = utils.RECODE_DBERR
+		rsp.ErrMsg = utils.RecodeText(rsp.Error)
+		return err
+	}
+	beego.Info("该用户下的房屋列表：")
+	for i, v := range houseList {
+		beego.Info(i, v)
+	}
+	// 转为json
+	data, err := json.Marshal(houseList)
+	rsp.Mix = data
 	return nil
 }
