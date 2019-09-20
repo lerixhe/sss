@@ -64,8 +64,9 @@ func (e *GetUserHouses) CallGetUserHouses(ctx context.Context, req *GETUSERHOUSE
 	}
 	houseList := []models.House{}
 	// 根据id查询house与user表，得到该id下的house列表
+	// 注意需要关联查询，才能完整查到对应的area信息。
 	o := orm.NewOrm()
-	_, err = o.QueryTable("House").Filter("User", id).All(&houseList)
+	_, err = o.QueryTable("House").RelatedSel().Filter("User", id).All(&houseList)
 	if err != nil {
 		beego.Info("房屋数据查询失败", err)
 		rsp.Error = utils.RECODE_DBERR
@@ -73,8 +74,8 @@ func (e *GetUserHouses) CallGetUserHouses(ctx context.Context, req *GETUSERHOUSE
 		return err
 	}
 	beego.Info("该用户下的房屋列表：")
-	for i, v := range houseList {
-		beego.Info(i, v)
+	for i, house := range houseList {
+		beego.Info(i, house, house.Area)
 	}
 	// 转为json
 	data, err := json.Marshal(houseList)
