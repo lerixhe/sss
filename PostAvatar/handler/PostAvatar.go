@@ -35,6 +35,7 @@ func (e *PostAvatar) CallPostAvatar(ctx context.Context, req *POSTAVATAR.Request
 		beego.Info("传输数据丢失")
 		rsp.Error = utils.RECODE_DATAERR
 		rsp.ErrMsg = utils.RecodeText(rsp.Error)
+		return nil
 	}
 	// 获取文件拓展名,不要点
 	ext := path.Ext(fileName)[1:]
