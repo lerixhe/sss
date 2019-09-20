@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"sss/ihomeWeb/models"
 	"sss/ihomeWeb/utils"
+	"time"
 
 	PUTUSERINFO "sss/PutUserInfo/proto/PutUserInfo"
 
@@ -70,5 +71,9 @@ func (e *PutUserInfo) CallPutUserInfo(ctx context.Context, req *PUTUSERINFO.Requ
 	// 更新完毕，返回新用户名
 	rsp.NewName = newName
 	beego.Info("用户名更新完毕：", newName)
+	// 更新session,session中的name之前咱用的手机号，现在需要更新
+	bm.Put(sessionID+"user_id", user.Id, time.Second*3600)
+	bm.Put(sessionID+"user_name", user.Name, time.Second*3600)
+	bm.Put(sessionID+"user_mobile", user.Name, time.Second*3600)
 	return nil
 }
