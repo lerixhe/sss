@@ -795,8 +795,15 @@ func GetUserHouses(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	beego.Info("请求到的房屋信息\n", houseList)
 	// json接口文档要求格式为map包裹数组,这里得到的是个数组，
 	// 需要构造一个map，存入其键houses中
-	houses := make(map[string][]models.House)
-	houses["houses"] = houseList
+	// 注意!!!不能直接回传[]models.House{}，此结构体中有指针，会丢失信息
+	// 使用工具函数解决
+	houseListJSON := []map[string]interface{}{}
+	for _, house := range houseList {
+		houseJSON := house.To_house_info()
+		houseListJSON = append(houseListJSON, houseJSON)
+	}
+	houses := make(map[string]interface{})
+	houses["houses"] = houseListJSON
 	response := map[string]interface{}{
 		"errno":  rsp.Error,
 		"errmsg": rsp.ErrMsg,
