@@ -94,7 +94,7 @@ func (this *House) To_house_info() map[string]interface{} {
 }
 
 //处理1个房子的全部信息：将结构体转为map
-func (this *House) To_one_house_desc() interface{} {
+func (this *House) To_one_house_desc() map[string]interface{} {
 	house_desc := map[string]interface{}{
 		"hid":         this.Id,
 		"user_id":     this.User.Id,
