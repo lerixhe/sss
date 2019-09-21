@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"reflect"
 	"sss/ihomeWeb/models"
 	"strconv"
 
@@ -32,6 +33,7 @@ func (e *PostHouses) CallPostHouses(ctx context.Context, req *POSTHOUSES.Request
 	// 解析houseInfo
 	houseInfo := make(map[string]interface{})
 	json.Unmarshal(houseInfoJson, &houseInfo)
+	beego.Info("用户发送房源信息表单：", houseInfo)
 	// 读取redis链接配置
 	redisConf := map[string]string{
 		"key":      utils.G_server_name,
@@ -101,6 +103,7 @@ func (e *PostHouses) CallPostHouses(ctx context.Context, req *POSTHOUSES.Request
 	// 并不能直接接收，一个一个遍历json切片元素，存入model切片对应位置
 	fa := []*models.Facility{}
 	for _, v := range houseInfo["facility"].([]interface{}) {
+		beego.Info("设施：", v, reflect.TypeOf(v))
 		id, _ := strconv.Atoi(v.(string))
 		tmp := models.Facility{Id: id}
 		fa = append(fa, &tmp)
@@ -108,13 +111,23 @@ func (e *PostHouses) CallPostHouses(ctx context.Context, req *POSTHOUSES.Request
 	house.Facilities = fa
 	o := orm.NewOrm()
 	// 数据model构造完毕，开始写入
-	houseID, err := o.Insert(&house)
+	_, err = o.Insert(&house)
 	if err != nil {
 		beego.Info("插入数据错误", err)
 		rsp.Error = utils.RECODE_DBERR
 		rsp.ErrMsg = utils.RecodeText(rsp.Error)
 		return err
 	}
-	rsp.HousID = strconv.FormatInt(houseID, 10)
+	// 上面的插入方法不能讲设施数据插入进入，进入house表并没有设施字段，而是有专门的房屋——设施关系表单独维护
+	// 因为这是一个多对多的关系。故上面的插入方法会丢失设施信息。解决方法：多对多插入
+	_, err = o.QueryM2M(&house, "Facilities").Add(house.Facilities)
+	if err != nil {
+		beego.Info("插入数据错误", err)
+		rsp.Error = utils.RECODE_DBERR
+		rsp.ErrMsg = utils.RecodeText(rsp.Error)
+		return err
+	}
+	beego.Info("多对多插入自动创建的房屋记录id", house.Id)
+	rsp.HousID = strconv.Itoa(house.Id)
 	return nil
 }
