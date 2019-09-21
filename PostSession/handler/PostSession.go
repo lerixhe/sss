@@ -76,9 +76,13 @@ func (e *PostSession) CallPostSession(ctx context.Context, req *POSTSESSION.Requ
 	sessionID := utils.GetMd5String(mobile + password)
 	rsp.SessionID = sessionID
 	// 用户信息存入缓存，格式key：sessionID+用户字段 vaule：字段值
+	// 可能没有设置用户名，则设置为手机号
+	if user.Name == "" {
+		user.Name = user.Mobile
+	}
 	bm.Put(sessionID+"user_id", user.Id, time.Second*3600)
-	bm.Put(sessionID+"user_name", mobile, time.Second*3600)
-	bm.Put(sessionID+"user_mobile", mobile, time.Second*3600)
+	bm.Put(sessionID+"user_name", user.Name, time.Second*3600)
+	bm.Put(sessionID+"user_mobile", user.Mobile, time.Second*3600)
 
 	return nil
 }

@@ -66,14 +66,28 @@ func (e *PutUserInfo) CallPutUserInfo(ctx context.Context, req *PUTUSERINFO.Requ
 	// 通过用户id查询用户所有数据
 	user := models.User{Id: id, Name: newName}
 	o := orm.NewOrm()
-	o.Update(&user, "Name")
+	_, err = o.Update(&user, "Name")
+	if err != nil {
+		beego.Info("用户信息更新数据库失败", err)
+		rsp.Error = utils.RECODE_DBERR
+		rsp.ErrMsg = utils.RecodeText(rsp.Error)
+		return err
+	}
 	beego.Info(user)
 	// 更新完毕，返回新用户名
 	rsp.NewName = newName
 	beego.Info("用户名更新完毕：", newName)
 	// 更新session,session中的name之前咱用的手机号，现在需要更新
-	bm.Put(sessionID+"user_id", user.Id, time.Second*3600)
-	bm.Put(sessionID+"user_name", user.Name, time.Second*3600)
-	bm.Put(sessionID+"user_mobile", user.Name, time.Second*3600)
+	err = bm.Put(sessionID+"user_id", user.Id, time.Second*3600)
+	err = bm.Put(sessionID+"user_name", user.Name, time.Second*3600)
+	err = bm.Put(sessionID+"user_mobile", user.Name, time.Second*3600)
+	if err != nil {
+		beego.Info("更新缓存失败", err)
+		rsp.Error = utils.RECODE_DBERR
+		rsp.ErrMsg = utils.RecodeText(rsp.Error)
+		return err
+	}
+	beego.Info("更新缓存成功")
+
 	return nil
 }

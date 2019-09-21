@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"reflect"
 	"sss/ihomeWeb/models"
 
 	"github.com/astaxie/beego/orm"
@@ -49,12 +48,11 @@ func (e *GetUserHouses) CallGetUserHouses(ctx context.Context, req *GETUSERHOUSE
 	// 验证sessionID，并得到id
 	reply := bm.Get(sessionID + "user_id")
 	if reply == nil {
-		beego.Info("缓存查询结果为空")
+		beego.Info("id缓存查询结果为空")
 		rsp.Error = utils.RECODE_NODATA
 		rsp.ErrMsg = utils.RecodeText(rsp.Error)
 		return nil
 	}
-	beego.Info(reply, reflect.TypeOf(reply))
 	id, err := redis.Int(reply, nil)
 	if err != nil {
 		beego.Info("缓存数据类型错误", err)
@@ -62,6 +60,7 @@ func (e *GetUserHouses) CallGetUserHouses(ctx context.Context, req *GETUSERHOUSE
 		rsp.ErrMsg = utils.RecodeText(rsp.Error)
 		return err
 	}
+	beego.Info("用户id", id)
 	houseList := []models.House{}
 	// 根据id查询house与user表，得到该id下的house列表
 	// 注意需要关联查询，才能完整查到对应的area信息。

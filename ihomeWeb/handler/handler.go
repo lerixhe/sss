@@ -13,6 +13,7 @@ import (
 	GETAREA "sss/GetArea/proto/GetArea"
 	GETHOUSEINFO "sss/GetHouseInfo/proto/GetHouseInfo"
 	GETIMAGECD "sss/GetImageCd/proto/GetImageCd"
+	GETINDEX "sss/GetIndex/proto/GetIndex"
 	GETSESSION "sss/GetSession/proto/GetSession"
 	GETSMSCD "sss/GetSmsCd/proto/GetSmsCd"
 	GETUSERHOUSES "sss/GetUserHouses/proto/GetUserHouses"
@@ -55,6 +56,7 @@ func GetArea(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	res, err := areaService.GetAreas(context.TODO(), &GETAREA.Request{})
 	// 若发生错误
 	if err != nil {
+		beego.Info("RPC错误")
 		http.Error(w, err.Error(), 500)
 		return
 	}
@@ -103,9 +105,9 @@ func GetSession(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	rsp, err := sessionService.CallGetSession(context.TODO(), &GETSESSION.Request{
 		SessionID: cookie.Value,
 	})
-
 	// 若发生错误
 	if err != nil {
+		beego.Info("RPC错误")
 		http.Error(w, err.Error(), 500)
 		return
 	}
@@ -113,8 +115,8 @@ func GetSession(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	data := make(map[string]string)
 	data["name"] = rsp.GetName()
 	response := map[string]interface{}{
-		"errno":  rsp.GetError(),
-		"errmsg": rsp.GetErrMsg(),
+		"errno":  rsp.Error,
+		"errmsg": rsp.ErrMsg,
 		"data":   data,
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -128,23 +130,53 @@ func GetSession(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 // 调用远程方法的函数:获取首页轮播图
 func GetIndex(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	beego.Info("获取首页轮播图 GetIndex api/v1.0/house/index")
-
-	// service := grpc.NewService()
-	// service.Init()
-	// areaService := GETAREA.NewGetAreaService("go.micro.srv.GetArea", service.Client())
-	// res, err := areaService.GetAreas(context.TODO(), &GETAREA.Request{})
-	// // 若发生错误
-	// if err != nil {
-	// 	http.Error(w, err.Error(), 500)
-	// 	return
-	// }
-
+	service := grpc.NewService()
+	service.Init()
+	getIndexService := GETINDEX.NewGetIndexService("go.micro.srv.GetIndex", service.Client())
+	rsp, err := getIndexService.CallGetIndex(context.TODO(), &GETINDEX.Request{})
+	// 若发生错误
+	if err != nil {
+		beego.Info("RPC错误", err)
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	// 这里直接接收并返回，让服务端提前把格式处理好
+	houses := []models.House{}
+	bytes := rsp.GetIndexBytes()
+	err = json.Unmarshal(bytes, &houses)
+	if err != nil {
+		beego.Info("json解码失败", err)
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	beego.Info("获取到index数据", houses)
+	// 构造前端可接受的json格式
+	housesJSON := []interface{}{}
+	for _, house := range houses {
+		h := map[string]interface{}{
+			"house_id":    house.Id,
+			"title":       house.Title,
+			"price":       house.Price,
+			"area_name":   house.Area.Name,
+			"img_url":     utils.AddDomain2Url(house.Index_image_url),
+			"room_count":  house.Room_count,
+			"order_count": house.Order_count,
+			"address":     house.Address,
+			"user_avatar": utils.AddDomain2Url(house.User.Avatar_url),
+			"ctime":       house.Ctime.Format("2006-01-02 15:04:05"),
+		}
+		housesJSON = append(housesJSON, h)
+	}
+	housesDATA := make(map[string]interface{})
+	housesDATA["houses"] = housesJSON
 	response := map[string]interface{}{
-		"errno":  utils.RECODE_DBERR,
-		"errmsg": utils.RecodeText(utils.RECODE_DBERR),
+		"errno":  rsp.GetError(),
+		"errmsg": rsp.GetErrMsg(),
+		"data":   housesJSON,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
+		beego.Info("encode失败：", err)
 		http.Error(w, err.Error(), 500)
 		return
 	}
@@ -163,18 +195,11 @@ func PostSession(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
+	beego.Info("用户提交信息", data["mobile"], data["password"])
 	// 取得数据并校验
 	if data["mobile"] == "" || data["password"] == "" {
 		beego.Info("表单数据不完整")
-		response := map[string]interface{}{
-			"errno":  utils.RECODE_NODATA,
-			"errmsg": utils.RecodeText(utils.RECODE_NODATA),
-		}
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, err.Error(), 500)
-			return
-		}
+		http.Error(w, err.Error(), 500)
 		return
 	}
 
@@ -188,15 +213,19 @@ func PostSession(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	})
 	// 若发生错误
 	if err != nil {
+		beego.Info("RPC错误", err)
 		http.Error(w, err.Error(), 500)
 		return
 	}
+
 	// 若通过验证，拿到服务回复中的sessioniD
 	sessionID := rsp.GetSessionID()
+	beego.Info("验证通过,开始查看本地cookies")
 	// 读取cookie
 	cookie, err := r.Cookie("userlogin")
 	// 如果没读取到或者出错，则设置cookie
 	if err != nil || cookie.Value == "" {
+		beego.Info("本地cookies不存在，开始设置cookie")
 		newcookie := http.Cookie{
 			Name:   "userlogin",
 			Value:  sessionID,
@@ -204,6 +233,8 @@ func PostSession(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			MaxAge: 600,
 		}
 		http.SetCookie(w, &newcookie)
+		beego.Info("cookies设置成功")
+
 	}
 	response := map[string]interface{}{
 		"errno":  rsp.GetError(),
@@ -244,6 +275,7 @@ func DeleteSession(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	})
 	// 若发生错误
 	if err != nil {
+		beego.Info("RPC错误")
 		http.Error(w, err.Error(), 500)
 		return
 	}
@@ -282,6 +314,7 @@ func GetImageCode(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	})
 	// 若发生错误
 	if err != nil {
+		beego.Info("RPC错误")
 		http.Error(w, err.Error(), 500)
 		return
 	}
@@ -352,6 +385,7 @@ func GetSmsCode(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	// 若发生错误
 	if err != nil {
+		beego.Info("RPC错误")
 		http.Error(w, err.Error(), 500)
 		return
 	}
@@ -376,6 +410,7 @@ func PostReg(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	err := json.NewDecoder(r.Body).Decode(&requestInfo)
 	// 若发生错误
 	if err != nil {
+		beego.Info("RPC错误")
 		http.Error(w, err.Error(), 500)
 		return
 	}
@@ -407,6 +442,7 @@ func PostReg(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	})
 	// 若发生错误
 	if err != nil {
+		beego.Info("RPC错误")
 		http.Error(w, err.Error(), 500)
 		return
 	}
@@ -765,7 +801,7 @@ func GetUserHouses(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 		}
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(response); err != nil {
-			beego.Info("json转码错误")
+			beego.Info("json转码错误", err)
 			http.Error(w, err.Error(), 500)
 			return
 		}
@@ -790,7 +826,7 @@ func GetUserHouses(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 
 	err = json.Unmarshal(data, &houseList)
 	if err != nil {
-		beego.Info("json转码错误")
+		beego.Info("json转码错误2", err)
 		http.Error(w, err.Error(), 500)
 		return
 	}
