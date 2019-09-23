@@ -16,7 +16,7 @@ import (
 func main() {
 	// create new web service
 	service := web.NewService(
-		web.Name("go.micro.web.IhomeWeb"),
+		web.Name("go.micro.web.ihomeWeb"),
 		web.Version("latest"),
 		web.Address(":8999"),
 	)
@@ -67,7 +67,7 @@ func main() {
 	service.Handle("/", rou)
 
 	// service.Handle("/", http.FileServer(http.Dir("html")))
-	// service.HandleFunc("/IhomeWeb/call", handler.IhomeWebCall)
+	// service.HandleFunc("/ihomeWeb/call", handler.ihomeWebCall)
 
 	// run service
 	if err := service.Run(); err != nil {

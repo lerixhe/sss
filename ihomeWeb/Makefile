@@ -5,7 +5,7 @@ GOPATH:=$(shell go env GOPATH)
 .PHONY: build
 build:
 
-	go build -o IhomeWeb-web main.go plugin.go
+	go build -o ihomeWeb-web main.go plugin.go
 
 .PHONY: test
 test:
@@ -13,4 +13,4 @@ test:
 
 .PHONY: docker
 docker:
-	docker build . -t IhomeWeb-web:latest
+	docker build . -t ihomeWeb-web:latest

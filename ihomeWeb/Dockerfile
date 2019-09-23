@@ -1,5 +1,5 @@
 FROM alpine
 ADD html /html
-ADD IhomeWeb-web /IhomeWeb-web
+ADD ihomeWeb-web /ihomeWeb-web
 WORKDIR /
-ENTRYPOINT [ "/IhomeWeb-web" ]
+ENTRYPOINT [ "/ihomeWeb-web" ]

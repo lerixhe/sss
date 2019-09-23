@@ -38,7 +38,7 @@ import (
 	"github.com/micro/go-micro/service/grpc"
 )
 
-// func IhomeWebCall(w http.ResponseWriter, r *http.Request) {
+// func ihomeWebCall(w http.ResponseWriter, r *http.Request) {
 // 	// decode the incoming request as json
 // 	var request map[string]interface{}
 // 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {

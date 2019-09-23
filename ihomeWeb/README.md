@@ -1,11 +1,11 @@
-# IhomeWeb Service
+# ihomeWeb Service
 
-This is the IhomeWeb service
+This is the ihomeWeb service
 
 Generated with
 
 ```
-micro new sss/IhomeWeb --namespace=go.micro --type=web
+micro new sss/ihomeWeb --namespace=go.micro --type=web
 ```
 
 ## Getting Started
@@ -16,9 +16,9 @@ micro new sss/IhomeWeb --namespace=go.micro --type=web
 
 ## Configuration
 
-- FQDN: go.micro.web.IhomeWeb
+- FQDN: go.micro.web.ihomeWeb
 - Type: web
-- Alias: IhomeWeb
+- Alias: ihomeWeb
 
 ## Dependencies
 
@@ -46,7 +46,7 @@ make build
 
 Run the service
 ```
-./IhomeWeb-web
+./ihomeWeb-web
 ```
 
 Build a docker image
