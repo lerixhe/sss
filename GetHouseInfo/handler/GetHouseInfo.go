@@ -48,24 +48,9 @@ func (e *GetHouseInfo) CallGetHouseInfo(ctx context.Context, req *GETHOUSEINFO.R
 		rsp.ErrMsg = utils.RecodeText(rsp.Error)
 		return err
 	}
-	// 验证sessionID，并得到id
-	reply := bm.Get(sessionID + "user_id")
-	if reply == nil {
-		beego.Info("缓存查询结果为空")
-		rsp.Error = utils.RECODE_NODATA
-		rsp.ErrMsg = utils.RecodeText(rsp.Error)
-		return nil
-	}
-	userID, err := redis.Int(reply, nil)
-	if err != nil {
-		beego.Info("缓存数据类型错误", err)
-		rsp.Error = utils.RECODE_DATAERR
-		rsp.ErrMsg = utils.RecodeText(rsp.Error)
-		return err
-	}
-	rsp.UserID = strconv.Itoa(userID)
+
 	// 尝试在redis中直接获取房屋信息key=house_info_{houseID}
-	reply = bm.Get("house_info_" + req.GetHouseID())
+	reply := bm.Get("house_info_" + req.GetHouseID())
 	if reply != nil {
 		// 查询到，则直接返回并结束任务
 		beego.Info("缓存查询到数据！")
@@ -117,5 +102,21 @@ func (e *GetHouseInfo) CallGetHouseInfo(ctx context.Context, req *GETHOUSEINFO.R
 	beego.Info("房屋信息成功存储到缓存")
 	// 发送数据
 	rsp.HouseInfoBytes = houseInfoBytes
+	// 验证sessionID，并得到id
+	reply = bm.Get(sessionID + "user_id")
+	if reply == nil {
+		beego.Info("缓存查询结果为空")
+		rsp.Error = utils.RECODE_NODATA
+		rsp.ErrMsg = utils.RecodeText(rsp.Error)
+		return nil
+	}
+	userID, err := redis.Int(reply, nil)
+	if err != nil {
+		beego.Info("缓存数据类型错误", err)
+		rsp.Error = utils.RECODE_DATAERR
+		rsp.ErrMsg = utils.RecodeText(rsp.Error)
+		return err
+	}
+	rsp.UserID = strconv.Itoa(userID)
 	return nil
 }

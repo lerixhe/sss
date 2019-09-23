@@ -230,7 +230,7 @@ func PostSession(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			Name:   "userlogin",
 			Value:  sessionID,
 			Path:   "/",
-			MaxAge: 600,
+			MaxAge: 60,
 		}
 		http.SetCookie(w, &newcookie)
 		beego.Info("cookies设置成功")
@@ -1012,26 +1012,27 @@ func GetHouseInfo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	// 从cookies中获取sessionID
 	cookie, err := r.Cookie("userlogin")
 	if err != nil || cookie.Value == "" {
-		// 说明用户本没有登录，返回对应信息即可
-		response := map[string]interface{}{
-			"errno":  utils.RECODE_SESSIONERR,
-			"errmsg": utils.RecodeText(utils.RECODE_SESSIONERR),
-		}
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			beego.Info("json转码错误")
-			http.Error(w, err.Error(), 500)
-			return
-		}
-		return
+		// 	// 说明用户本没有登录，返回对应信息即可
+		beego.Info("游客查询房源详细信息")
+		// 	response := map[string]interface{}{
+		// 		"errno":  utils.RECODE_SESSIONERR,
+		// 		"errmsg": utils.RecodeText(utils.RECODE_SESSIONERR),
+		// 	}
+		// 	w.Header().Set("Content-Type", "application/json")
+		// 	if err := json.NewEncoder(w).Encode(response); err != nil {
+		// 		beego.Info("json转码错误")
+		// 		http.Error(w, err.Error(), 500)
+		// 		return
+		// 	}
+		// 	return
 	}
 	// 调用微服务
 	service := grpc.NewService()
 	service.Init()
 	getHouseInfo := GETHOUSEINFO.NewGetHouseInfoService("go.micro.srv.GetHouseInfo", service.Client())
 	rsp, err := getHouseInfo.CallGetHouseInfo(context.TODO(), &GETHOUSEINFO.Request{
-		SessionID: cookie.Value,
-		HouseID:   houseID,
+		// SessionID: cookie.Value,
+		HouseID: houseID,
 	})
 	// 若发生错误
 	if err != nil {
